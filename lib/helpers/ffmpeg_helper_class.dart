@@ -23,21 +23,22 @@ class FFMpegHelper {
   String? _tempFolderPath;
   String? _ffmpegBinDirectory;
   String? _ffmpegInstallationPath;
+  String? _ffmpegDownloadUrl;
+  bool _actived = false;
 
   Future<void> initialize({
     Directory? ffmpegBaseDir,
+    String? ffmpegDownloadUrl,
   }) async {
+    _ffmpegDownloadUrl = ffmpegDownloadUrl;
     if (Platform.isWindows) {
       PackageInfo packageInfo = await PackageInfo.fromPlatform();
       String appName = packageInfo.appName;
       Directory tempDir = await getTemporaryDirectory();
       _tempFolderPath = path.join(tempDir.path, "ffmpeg");
-      Directory ffmpegInstallDir =
-          ffmpegBaseDir ?? await getApplicationDocumentsDirectory();
-      _ffmpegInstallationPath =
-          path.join(ffmpegInstallDir.path, appName, "ffmpeg");
-      _ffmpegBinDirectory = path.join(
-          _ffmpegInstallationPath!, "ffmpeg-master-latest-win64-gpl", "bin");
+      Directory ffmpegInstallDir = ffmpegBaseDir ?? await getApplicationDocumentsDirectory();
+      _ffmpegInstallationPath = path.join(ffmpegInstallDir.path, appName, "ffmpeg");
+      _ffmpegBinDirectory = path.join(_ffmpegInstallationPath!, "ffmpeg-master-latest-win64-gpl", "bin");
     }
   }
 
@@ -200,12 +201,9 @@ class FFMpegHelper {
             int.tryParse(temp['total_size']) ?? 0,
             int.tryParse(temp['out_time_us']) ?? 0,
             // 2189.6kbits/s => 2189.6
-            double.tryParse(
-                    temp['bitrate']?.replaceAll(RegExp('[a-z/]'), '')) ??
-                0.0,
+            double.tryParse(temp['bitrate']?.replaceAll(RegExp('[a-z/]'), '')) ?? 0.0,
             // 2.15x => 2.15
-            double.tryParse(temp['speed']?.replaceAll(RegExp('[a-z/]'), '')) ??
-                0.0,
+            double.tryParse(temp['speed']?.replaceAll(RegExp('[a-z/]'), '')) ?? 0.0,
           ));
         } catch (e) {
           if (kDebugMode) {
@@ -264,7 +262,7 @@ class FFMpegHelper {
     return completer.future;
   }
 
-  Future<MediaInformation?> runProbe(String filePath) async {
+  Future<MediaInformation?> runProbeFromPath(String filePath) async {
     if (Platform.isWindows || Platform.isLinux) {
       return _runProbeOnWindows(filePath);
     } else {
@@ -275,8 +273,7 @@ class FFMpegHelper {
   Future<MediaInformation?> _runProbeOnNonWindows(String filePath) async {
     Completer<MediaInformation?> completer = Completer<MediaInformation?>();
     try {
-      await FFprobeKit.getMediaInformationAsync(filePath,
-          (MediaInformationSession session) async {
+      await FFprobeKit.getMediaInformationAsync(filePath, (MediaInformationSession session) async {
         final MediaInformation? information = session.getMediaInformation();
         if (information != null) {
           if (!completer.isCompleted) {
@@ -296,6 +293,30 @@ class FFMpegHelper {
     return completer.future;
   }
 
+  Future<MediaInformation?> runProbeProcess(List<String> arguments) async {
+    if (!_actived) {
+      return null;
+    }
+    String ffprobe = 'ffprobe';
+    if (((_ffmpegBinDirectory != null) && (Platform.isWindows))) {
+      ffprobe = path.join(_ffmpegBinDirectory!, "ffprobe.exe");
+    }
+    final result = await Process.run(ffprobe, arguments);
+    if (result.stdout == null || result.stdout is! String || (result.stdout as String).isEmpty) {
+      return null;
+    }
+    if (result.exitCode == ReturnCode.success) {
+      try {
+        final json = jsonDecode(result.stdout);
+        return MediaInformation(json);
+      } catch (e) {
+        return null;
+      }
+    } else {
+      return null;
+    }
+  }
+
   Future<MediaInformation?> _runProbeOnWindows(String filePath) async {
     String ffprobe = 'ffprobe';
     if (((_ffmpegBinDirectory != null) && (Platform.isWindows))) {
@@ -311,9 +332,7 @@ class FFMpegHelper {
       '-show_chapters',
       filePath,
     ]);
-    if (result.stdout == null ||
-        result.stdout is! String ||
-        (result.stdout as String).isEmpty) {
+    if (result.stdout == null || result.stdout is! String || (result.stdout as String).isEmpty) {
       return null;
     }
     if (result.exitCode == ReturnCode.success) {
@@ -418,7 +437,7 @@ class FFMpegHelper {
         try {
           Dio dio = Dio();
           Response response = await dio.download(
-            _ffmpegUrl,
+            _ffmpegDownloadUrl ?? _ffmpegUrl,
             ffmpegZipPath,
             cancelToken: cancelToken,
             onReceiveProgress: (int received, int total) {
@@ -443,8 +462,9 @@ class FFMpegHelper {
             onProgress?.call(FFMpegProgress(
               downloaded: 0,
               fileSize: 0,
-              phase: FFMpegProgressPhase.inactive,
+              phase: FFMpegProgressPhase.active,
             ));
+            _actived = true;
             return true;
           } else {
             onProgress?.call(FFMpegProgress(
@@ -463,6 +483,16 @@ class FFMpegHelper {
           return false;
         }
       } else {
+        var directory = Directory(_ffmpegBinDirectory!);
+        if (await directory.exists()) {
+          onProgress?.call(FFMpegProgress(
+            downloaded: 0,
+            fileSize: 0,
+            phase: FFMpegProgressPhase.active,
+          ));
+          _actived = true;
+          return true;
+        }
         onProgress?.call(FFMpegProgress(
           downloaded: 0,
           fileSize: 0,
@@ -476,8 +506,9 @@ class FFMpegHelper {
           onProgress?.call(FFMpegProgress(
             downloaded: 0,
             fileSize: 0,
-            phase: FFMpegProgressPhase.inactive,
+            phase: FFMpegProgressPhase.active,
           ));
+          _actived = true;
           return true;
         } catch (e) {
           onProgress?.call(FFMpegProgress(

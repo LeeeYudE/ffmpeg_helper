@@ -15,11 +15,9 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  File selectedFile =
-      File(path.join('assets', 'Drone Footage of High Rises in a City.mp4'));
+  File selectedFile = File(path.join('assets', 'Drone Footage of High Rises in a City.mp4'));
   bool ffmpegPresent = false;
-  ValueNotifier<FFMpegProgress> downloadProgress =
-      ValueNotifier<FFMpegProgress>(FFMpegProgress(
+  ValueNotifier<FFMpegProgress> downloadProgress = ValueNotifier<FFMpegProgress>(FFMpegProgress(
     downloaded: 0,
     fileSize: 0,
     phase: FFMpegProgressPhase.inactive,
@@ -39,7 +37,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> runFFprobe() async {
-    MediaInformation? res = await ffmpeg.runProbe(selectedFile.path);
+    MediaInformation? res = await ffmpeg.runProbeFromPath(selectedFile.path);
     if (res != null) {
       print('${res.getBitrate()}');
       for (StreamInformation stream in res.getStreams()) {
@@ -76,8 +74,7 @@ class _HomePageState extends State<HomePage> {
       // show dialog box
       await Dialogs.materialDialog(
           color: Colors.white,
-          msg:
-              'FFmpeg installation required by user.\nsudo apt-get install ffmpeg\nsudo snap install ffmpeg',
+          msg: 'FFmpeg installation required by user.\nsudo apt-get install ffmpeg\nsudo snap install ffmpeg',
           title: 'Install FFMpeg',
           context: context,
           actions: [

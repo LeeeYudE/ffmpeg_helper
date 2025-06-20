@@ -14,4 +14,5 @@ enum FFMpegProgressPhase {
   downloading,
   decompressing,
   inactive,
+  active,
 }
