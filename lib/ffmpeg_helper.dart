@@ -1,14 +1,14 @@
 library ffmpeg_helper;
 
-export 'package:ffmpeg_kit_flutter_min_gpl/ffmpeg_kit.dart';
-export 'package:ffmpeg_kit_flutter_min_gpl/ffmpeg_session.dart';
-export 'package:ffmpeg_kit_flutter_min_gpl/ffprobe_kit.dart';
-export 'package:ffmpeg_kit_flutter_min_gpl/log.dart';
-export 'package:ffmpeg_kit_flutter_min_gpl/media_information.dart';
-export 'package:ffmpeg_kit_flutter_min_gpl/media_information_session.dart';
-export 'package:ffmpeg_kit_flutter_min_gpl/return_code.dart';
-export 'package:ffmpeg_kit_flutter_min_gpl/statistics.dart';
-export 'package:ffmpeg_kit_flutter_min_gpl/stream_information.dart';
+export 'package:ffmpeg_kit_flutter_new/ffmpeg_kit.dart';
+export 'package:ffmpeg_kit_flutter_new/ffmpeg_session.dart';
+export 'package:ffmpeg_kit_flutter_new/ffprobe_kit.dart';
+export 'package:ffmpeg_kit_flutter_new/log.dart';
+export 'package:ffmpeg_kit_flutter_new/media_information.dart';
+export 'package:ffmpeg_kit_flutter_new/media_information_session.dart';
+export 'package:ffmpeg_kit_flutter_new/return_code.dart';
+export 'package:ffmpeg_kit_flutter_new/statistics.dart';
+export 'package:ffmpeg_kit_flutter_new/stream_information.dart';
 
 // Abstract
 export 'abstract_classes/exporter.dart';
