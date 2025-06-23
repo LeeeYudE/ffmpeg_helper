@@ -301,7 +301,7 @@ class FFMpegHelper {
     if (((_ffmpegBinDirectory != null) && (Platform.isWindows))) {
       ffprobe = path.join(_ffmpegBinDirectory!, "ffprobe.exe");
     }
-    final result = await Process.run(ffprobe, arguments);
+    final result = await Process.run(ffprobe, arguments,stdoutEncoding: utf8, stderrEncoding: utf8);
     if (result.stdout == null || result.stdout is! String || (result.stdout as String).isEmpty) {
       return null;
     }
